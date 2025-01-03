@@ -1,0 +1,44 @@
+# Ignorar ambientes virtuais locais
+/venv
+/.venv
+*/venv
+*/.venv
+
+# Ignorar arquivos de cache e compilados do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignorar diretórios de build e distribuição
+/dist
+/build
+*.egg-info/
+*.egg
+
+# Ignorar arquivos de configuração de IDE
+.idea
+.vscode
+*.DS_Store
+
+# Ignorar logs, bancos de dados locais e cache de testes
+*.log
+*.db
+*.sqlite
+*.pytest_cache
+.coverage
+htmlcov/
+
+# Ignorar arquivos sensíveis e variáveis de ambiente
+.env
+.env.local
+*.pem
+
+# Ignorar arquivos do Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Ignorar resultados de testes e migrações
+tests/
+migrations/

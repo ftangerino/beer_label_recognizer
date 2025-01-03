@@ -1,0 +1,68 @@
+###################################################################################################
+# 📄 INICIALIZAÇÕES
+###################################################################################################
+
+# docker-compose up --build
+# docker-compose up -d
+# docker-compose down
+
+###################################################################################################
+# 🔶 FUNÇÕES
+###################################################################################################
+
+services:
+
+  #🔶 DB/SCHEMA/MONGO
+  mongo:
+    image: mongo:5.0
+    container_name: mongodb
+    volumes:
+      - ./db/init/schema.js:/docker-entrypoint-initdb.d/schema.js
+      - ./db/data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - my-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping').ok"]
+      interval: 10s
+      retries: 5
+      start_period: 20s
+
+  #🔶 /BACKEND-GO
+  backend-go:
+    build:
+      context: ./backend-go
+    container_name: backend-go
+    ports:
+      - "8081:8081"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      ocr-service-python:
+        condition: service_healthy
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - OCR_SERVICE_URL=http://ocr-service-python:5001/process-image
+    networks:
+      - my-network
+
+  #🔶 /OCR-SERVICE-PYTHON
+  ocr-service-python:
+    build:
+      context: ./ocr-service-python
+    container_name: ocr-service
+    ports:
+      - "5001:5001"
+    networks:
+      - my-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      retries: 5
+      start_period: 10s
+      timeout: 5s
+
+networks:
+  my-network:
+    driver: bridge

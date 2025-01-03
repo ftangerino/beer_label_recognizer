@@ -1,0 +1,19 @@
+# Ignorar binários e dependências do Go
+/bin/
+/pkg/
+
+# Ignorar arquivos temporários do sistema
+*.log
+*.tmp
+
+# Ignorar pastas do MongoDB
+db/data/
+
+# Ignorar arquivos de cache do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignorar arquivos de ambiente
+.env
