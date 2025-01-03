@@ -58,10 +58,10 @@ services:
       - my-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
-      interval: 30s
-      retries: 5
-      start_period: 10s
-      timeout: 5s
+      interval: 10s
+      retries: 3
+      start_period: 5s
+      timeout: 3s
 
 networks:
   my-network:

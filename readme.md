@@ -10,12 +10,22 @@ Esse projeto foi criado para reconhecer qual é a marca de cerveja em uma imagem
 1. **Clonar** ou baixar este repositório.
 2. Na pasta raiz, usando o `docker-compose.yml`, é só rodar:
    ```bash
-   docker-compose up --build
+   docker buildx build --platform linux/amd64 -t beer_label_recognizer-ocr-service-python ./ocr-service-python --load
+
+   docker buildx build --platform linux/amd64 -t beer_label_recognizer-backend-go ./backend-go --load
+
    ```
    - Ele vai subir:
      - **MongoDB** (para persistência),
      - **backend-go** (porta 8081) 
      - **ocr-service-python** (porta 5001).
+
+    Se o buildx não estiver habilitado, você pode criá-lo com:
+    ```bash
+   docker buildx create --name mybuilder --use
+   ```
+
+   Dessa forma podemos otimizar o build das imagens e reduzir o tamanho final dos contêineres, garantindo um melhor desempenho e menor tempo de deploy.
 
 Se quiser verificar:
 - **Go** rodando: [http://localhost:8081](http://localhost:8081)
