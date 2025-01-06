@@ -1,5 +1,5 @@
 ###################################################################################################
-# 📥 IMPORTS | CODING: UTF-8
+# 📅 IMPORTS | CODING: UTF-8
 ###################################################################################################
 # ✅ → Discussed and realized
 # 🟢 → Discussed and not realized (to be done after the meeting)
@@ -9,26 +9,54 @@
 # ⚪ → Postponed (technical debit)
 ###################################################################################################
 
-from flask import request, jsonify
-from app.app import app
-from app.ocr.ocr_utils import extract_text, match_beer_brand
+from flask import Blueprint, request, jsonify
+from app.ocr.ocr_utils import perform_ocr, find_best_match
+import cv2
+import numpy as np
+import threading
+
+# 🟢 [GENERAL] CREATE FLASK BLUEPRINT FOR OCR SERVICE
+ocr_bp = Blueprint('ocr', __name__)
+
+# 🟢 [GENERAL] THREAD LOCK FOR SYNCHRONIZATION
+lock = threading.Lock()
 
 ###################################################################################################
 # 🔰 AUXILIARY FUNCTIONS
 ###################################################################################################
 
-@app.route('/process-image', methods=['POST'])
+@ocr_bp.route('/ocr', methods=['POST'])
 def process_image():
-    if 'image' not in request.files:
-        return jsonify({"error": "Nenhuma imagem enviada"}), 400
-    file = request.files['image']
-    image_data = file.read()
+    with lock:
+        try:
+            # 🟢 [GENERAL] GET IMAGE FILE FROM REQUEST
+            file = request.files['file']
+            img_array = np.frombuffer(file.read(), np.uint8)
+            image = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
 
-    raw_text = extract_text(image_data)
-    if not raw_text:
-        return jsonify({"error": "Não foi possível reconhecer texto"}), 404
-    recognized_brand = match_beer_brand(raw_text)
-    if not recognized_brand:
-        return jsonify({"error": "Nenhuma marca identificada"}), 404
+            # 🔴 [ERROR HANDLING] CHECK IF IMAGE WAS PROPERLY DECODED
+            if image is None:
+                return jsonify({"error": "Erro ao processar imagem"}), 500
 
-    return jsonify({"brand": recognized_brand}), 200
+            # 🟢 [GENERAL] CONVERT IMAGE TO RGB FORMAT
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+            # 🟢 [GENERAL] PERFORM OCR ON THE IMAGE
+            extracted_text, error = perform_ocr(image)
+
+            # 🔴 [ERROR HANDLING] RETURN ERROR IF OCR FAILS
+            if error:
+                return jsonify({"error": error}), 500
+
+            # 🟢 [GENERAL] FIND BEST MATCH FROM EXTRACTED TEXT
+            match = find_best_match(extracted_text)
+
+            # 🟢 [GENERAL] RETURN MATCH RESULT OR NO MATCH MESSAGE
+            if match:
+                return jsonify({"match": f"Lata de {match}"})
+            else:
+                return jsonify({"match": "Nenhuma correspondência encontrada."})
+
+        except Exception as e:
+            # 🔴 [ERROR HANDLING] RETURN GENERAL EXCEPTION ERROR
+            return jsonify({"error": str(e)}), 500

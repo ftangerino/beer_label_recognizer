@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// 📥 IMPORTS | CODING: UTF-8
+// 📅 IMPORTS | CODING: UTF-8
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ✅ → Discussed and realized
 // 🟢 → Discussed and not realized (to be done after the meeting)
@@ -12,26 +12,27 @@
 package main
 
 import (
-    "log"
-    "net/http"
-    "os"
-
-    "backend-go/app/controllers"
-    "backend-go/app/database"
+	"log"
+	"net/http"
+	"app/routes"
+	"app/database"
 )
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// 🔶 MAIN FUNCTION
-///////////////////////////////////////////////////////////////////////////////////////////////////
 func main() {
-    mongoURI := os.Getenv("MONGO_URI")
-    if mongoURI == "" {
-        mongoURI = "mongodb://mongo:27017"
-        log.Println("[AVISO] MONGO_URI não definida; usando valor padrão:", mongoURI)
-    }
-    database.ConnectDB(mongoURI)
-    http.HandleFunc("/upload", controllers.UploadHandler)
+	// 🟢 [GENERAL] INITIALIZE MONGODB CONNECTION
+	database.InitMongo()
 
-    log.Println("Servidor rodando na porta 8081...")
-    log.Fatal(http.ListenAndServe(":8081", nil))
+	// 🟢 [GENERAL] SET UP API ROUTES
+	r := routes.SetupRoutes()
+
+	// 🟢 [GENERAL] DEFINE SERVER PORT
+	port := ":5001"
+	log.Printf("API rodando na porta %s\n", port)
+
+	// 🟢 [GENERAL] START HTTP SERVER
+	err := http.ListenAndServe(port, r)
+	if err != nil {
+		// 🔴 [ERROR HANDLING] LOG ERROR IF SERVER FAILS TO START
+		log.Fatalf("Erro ao iniciar o servidor: %v\n", err)
+	}
 }

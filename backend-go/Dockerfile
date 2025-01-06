@@ -1,17 +1,12 @@
-# Build the Go application
-FROM golang:1.23-alpine AS build
-WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
+FROM golang:1.20
+
+WORKDIR /goapp
+
 COPY . .
 
-# Build com otimização para evitar binário inflado
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/main .
+RUN go mod tidy
+RUN go build -o main .
 
-# Final runtime image - Usa scratch (imagem vazia)
-FROM scratch
-WORKDIR /app
-COPY --from=build /app/main /main
+EXPOSE 5001
 
-EXPOSE 8081
-CMD ["/main"]
+CMD ["./main"]

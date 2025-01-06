@@ -1,4 +1,3 @@
-// Switch to or create the 'beerdb' database
 db = db.getSiblingDB('beerdb');
 
 db.createCollection('beer_recognition');

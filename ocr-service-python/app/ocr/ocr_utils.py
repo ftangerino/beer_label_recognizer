@@ -9,16 +9,17 @@
 # ⚪ → Postponed (technical debit)
 ###################################################################################################
 
-import easyocr
-from PIL import Image
-import io
-import difflib
+from paddleocr import PaddleOCR
+from difflib import SequenceMatcher
 
 ###################################################################################################
 # 🛄 RESOURCES
 ###################################################################################################
 
-reader = easyocr.Reader(['pt', 'en'], gpu=False)
+# 🟢 [GENERAL] INITIALIZE OCR INSTANCE FOR REUSE
+ocr = PaddleOCR(lang='pt', use_angle_cls=True)
+
+# 🟢 [GENERAL] LIST OF BRAZILIAN BEER BRANDS FOR MATCHING
 BRAZILIAN_BEERS = [
     "Skol", "Brahma", "Antarctica", "Bohemia", "Itaipava",
     "Kaiser", "Schin", "Devassa", "Polar", "Heineken"
@@ -28,32 +29,42 @@ BRAZILIAN_BEERS = [
 # 🔰 AUXILIARY FUNCTIONS
 ###################################################################################################
 
-def extract_text(image_data):
-    """
-    Realiza leitura da imagem usando easyocr (mantido como estava).
-    """
-    try:
-        image = Image.open(io.BytesIO(image_data))
-        result = reader.readtext(image, detail=0)
-        raw_text = " ".join(result)
-        return raw_text.strip()
-    except Exception as e:
-        print(f"Erro ao processar a imagem: {e}")
-        return None
+# 🟢 [GENERAL] CALCULATE TEXT SIMILARITY BETWEEN STRINGS
+def calculate_similarity(a, b):
+    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
-def match_beer_brand(text):
-    """
-    Aplica similaridade para retornar a marca de cerveja
-    com >= 65% de semelhança, ou None se não encontrado.
-    """
-    if not text:
-        return None
+# 🟢 [GENERAL] FIND BEST MATCH FOR EXTRACTED TEXT AGAINST BEER LIST
+def find_best_match(extracted_text):
     best_match = None
-    highest_ratio = 0.0
-    for brand in BRAZILIAN_BEERS:
-        seq = difflib.SequenceMatcher(None, text.lower(), brand.lower())
-        ratio = seq.ratio() * 100
-        if ratio > highest_ratio:
-            highest_ratio = ratio
-            best_match = brand
-    return best_match if highest_ratio >= 65 else None
+    highest_similarity = 0.0
+    threshold = 0.65  # 🟢 [CONFIG] MINIMUM SIMILARITY THRESHOLD
+
+    words = extracted_text.split()
+
+    for word in words:
+        for beer in BRAZILIAN_BEERS:
+            similarity = calculate_similarity(word, beer)
+            if similarity > highest_similarity and similarity >= threshold:
+                highest_similarity = similarity
+                best_match = beer
+
+    return best_match
+
+# 🟢 [GENERAL] PERFORM OCR AND RETRY IF NECESSARY
+def perform_ocr(image, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            # 🟢 [OCR] PERFORM OCR ON IMAGE
+            result = ocr.ocr(image, cls=True)
+            extracted_text = ' '.join([detection[1][0] for detection in result[0] if detection[1]])
+            print(f"Tentativa {attempt + 1}: Texto Extraído (OCR):", extracted_text)
+            if extracted_text:
+                return extracted_text, None
+            else:
+                raise ValueError("Nenhum texto extraído.")
+        except Exception as e:
+            # 🔴 [ERROR HANDLING] LOG FAILURE AND RETRY
+            print(f"Tentativa {attempt + 1} falhou:", str(e))
+            if attempt == max_retries - 1:
+                return None, str(e)
+    return None, "Falha após múltiplas tentativas."
