@@ -76,7 +76,7 @@ db.beer_recognition.insertOne({
 - O resultado (marca identificada) é salvo no **MongoDB**.
 
 ### 2. Microsserviço 2: API OCR em Python
-- Recebe a imagem e aplica **OCR** com `EasyOCR`.
+- Recebe a imagem e aplica **OCR** com `PaddleOCR`.
 - Compara o texto extraído com uma lista de marcas de cerveja usando similaridade (`difflib`).
 - Retorna a marca encontrada para o Go ou indica que não houve correspondência.
 
